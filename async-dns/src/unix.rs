@@ -24,7 +24,7 @@ use std::cmp;
 use std::convert::TryInto;
 use std::fmt;
 use std::io;
-use std::net::{IpAddr, SocketAddr, TcpStream, UdpSocket};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, TcpStream, UdpSocket};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -274,8 +274,12 @@ async fn question_with_udp(
     let mut addrs = vec![];
 
     // Write the query to the nameserver address.
-    let socket = Async::<UdpSocket>::bind(([0, 0, 0, 0], 0))?;
     let foreign_addr = SocketAddr::new(nameserver, 53);
+    let socket = if foreign_addr.is_ipv4() {
+        Async::<UdpSocket>::bind((Ipv4Addr::UNSPECIFIED, 0))?
+    } else {
+        Async::<UdpSocket>::bind((Ipv6Addr::UNSPECIFIED, 0))?
+    };
 
     // UDP queries are limited to 512 bytes.
     let mut buf = [0; 512];
